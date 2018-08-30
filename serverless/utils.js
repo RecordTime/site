@@ -32,20 +32,33 @@ function getClient(context) {
  * 查询数据
  * @param {*} client 
  */
-async function fetch(client) {
+async function fetch(client, body) {
+  const primaryKey = [];
+  const inclusiveStartPrimaryKey = [];
+  const exclusiveEndPrimaryKey = [];
+  Object.keys(body).map(key => {
+    const value = body[key];
+    // 获取范围
+    if (Array.isArray(value)) {
+      inclusiveStartPrimaryKey.push({
+        [key]: value[0],
+      });
+      exclusiveEndPrimaryKey.push({
+        [key]: value[1],
+      });
+    }
+    primaryKey.push({
+      [key]: value,
+    });
+  });
   const params = {
     tableName: process.env['TableName'],
-    primaryKey: [{ count_name: 'views' }],
-    maxVersions: 1,
+    direction: TableStore.Direction.FORWARD,
+    primaryKey,
+    inclusiveStartPrimaryKey,
+    exclusiveEndPrimaryKey,
   };
-
-  const response = await client.getRow(params);
-  const row = response.row;
-
-  if (row && row.primaryKey) {
-    return row.attributes[0].columnValue.toNumber();
-  }
-  return null;
+  return client.getRow(params);
 }
 
 /** 

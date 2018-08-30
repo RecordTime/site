@@ -13,12 +13,27 @@ app.all('/(.*)', async (ctx)=>{
   //common codes goes here
 });
 app.get('/issues', async (ctx) => {
-  ctx.status = 200;
-  ctx.body = {
-    code: 'ok',
-    message: 'success',
-    users: ['hello world'],
-  };
+  const { context, query } = ctx;
+  try {
+    const res = await Issue.fetch(context, {
+      status: 0,
+    });
+    ctx.status = 200;
+    ctx.body = {
+      code: 'ok',
+      message: 'success',
+      query,
+      data: res,
+    };
+  } catch (err) {
+    ctx.status = 500;
+    ctx.body = {
+      code: 'error',
+      message: 'fail',
+      data: err,
+    };
+  }
+  
 });
 app.post('/issues', async (ctx) => {
   const { context, body } = ctx;
@@ -28,26 +43,37 @@ app.post('/issues', async (ctx) => {
     ctx.body = {
       code: 'ok',
       message: 'success',
-      body: res,
+      data: res,
     };
   } catch (err) {
     ctx.status = 500;
     ctx.body = {
       code: 'error',
       message: 'fail',
-      body: err,
+      data: err,
     };
   }
 });
 
 app.get('/issues/:id', async (ctx) => {
-  const id = ctx.params.id;
-  ctx.status = 200;
-  ctx.body = {
-    code: 'ok',
-    message: 'success',
-    users: [id],
-  };
+  const { context, params } = ctx;
+  const id = params.id;
+  try {
+    const issue = await Issue.fetch(context, { id });
+    ctx.status = 200;
+    ctx.body = {
+      code: 'ok',
+      message: 'success',
+      data: issue,
+    };
+  } catch (err) {
+    ctx.status = 500;
+    ctx.body = {
+      code: 'error',
+      message: 'fail',
+      data: err,
+    };
+  }
 });
 app.put('/issues/:id', async (ctx) => {
   const id = ctx.params.id;

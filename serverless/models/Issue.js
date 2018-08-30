@@ -1,4 +1,11 @@
-const { getClient, fetch, create } = require('../utils');
+const TableStore = require('tablestore');
+const { 
+  getClient, 
+  fetch, 
+  create 
+} = require('../utils');
+
+const Long = TableStore.Long;
 
 class Issue {
   constructor(props) {
@@ -16,6 +23,9 @@ class Issue {
   async remove() {
     const id = this.id;
   }
+  stringify() {
+    return JSON.stringify(this);
+  }
 }
 
 /**
@@ -24,7 +34,17 @@ class Issue {
  */
 Issue.create = async (ctx, params) => {
   const client = getClient(ctx);
-  return create(client, params);
+  return create(client, {
+    ...params,
+    attrs: {
+      ...params.attrs,
+      status: Long.fromNumber(0),
+    },
+  });
+}
+Issue.fetch = async (ctx, params) => {
+  const client = getClient(ctx);
+  return fetch(client, params);
 }
 
 module.exports = Issue;
