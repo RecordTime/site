@@ -17,8 +17,8 @@ export function getChartData(dataSource) {
   for (let i = 0, l = dataSource.length; i < l; i += 1) {
     // 单条记录
     const record = dataSource[i];
-    const startTime = parseInt(record.starttime, 10);
-    const endTime = parseInt(record.endtime, 10);
+    const startTime = new Date(record.beginTime).getTime();
+    const endTime = new Date(record.endTime).getTime();
     const spend = endTime - startTime;
     console.log(spend, 25 * 60 * 1000);
     if (Math.floor(spend / 1000 / 60) === 25) {
