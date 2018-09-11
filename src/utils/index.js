@@ -1,50 +1,50 @@
 import moment from 'moment';
 
 /**
- * 
  * 首先要拿到时间区间
  * 从数据源计算想要展示的数据格式
  * HourDate = { [key: number，小时 ]: value: number，该小时工作时长 }
- * @param {*} dataSource 
- * @return {HourData} detail
- * @return {number} total 总共工作的毫秒数
+ * @param {Log[]} dataSource 
+ * @return {HourData} data
+ * @return {number} time 总共工作的毫秒数
+ * @return {number} total 满足 25 分钟的 log 数
  */
 export function getChartData(dataSource) {
-  const res = {};
+  let minutes = 0;
   let total = 0;
-  let timerTotal = 0;
-  // 首先按小时计算，先列出 8 到 22 点的 x 轴
+  const data = {};
   for (let i = 0, l = dataSource.length; i < l; i += 1) {
     // 单条记录
-    const record = dataSource[i];
-    const startTime = new Date(record.beginTime).getTime();
-    const endTime = new Date(record.endTime).getTime();
-    const spend = endTime - startTime;
-    console.log(spend, 25 * 60 * 1000);
-    if (Math.floor(spend / 1000 / 60) === 25) {
-      timerTotal += 1;
-    }
-    total += spend;
-    console.log(startTime, endTime);
-    // 看这条记录是否落在单个小时内
-    const startHour = moment(startTime).hour();
-    const endHour = moment(endTime).hour();
-    console.log(startHour, endHour);
+    const log = dataSource[i];
+    const startTime = new Date(log.beginTime);
+    const startHour = startTime.getHours();
+    const startMinutes = startTime.getMinutes();
+    const endTime = new Date(log.endTime);
+    const endHour = endTime.getHours();
+    const endMinutes = endTime.getMinutes();
+    let spendTime = 0;
+    // 如果该次 log 是在同一个小时内
     if (startHour === endHour) {
-      res[startHour] = (res[startHour] === undefined ? 0 : res[startHour]) + spend;
+      spendTime = endMinutes - startMinutes;
+      data[startHour] = (data[startHour] === undefined ? 0 : data[startHour]) + spendTime;
     } else {
       // 如果不在同一个小时内
-      console.log(moment(startTime));
-      const point = new Date(startTime).setHours(startHour + 1, 0, 0).valueOf();
-      res[startHour] = (res[startHour] === undefined ? 0 : res[startHour]) + (point - startTime);
-      res[endHour] = (res[endHour] === undefined ? 0 : res[endHour]) + (endTime - point);
+      spendTime = (60 - startMinutes) + endMinutes;
+      data[startHour] = (data[startHour] === undefined ? 0 : data[startHour]) + (60 - startMinutes);
+      data[endHour] = (data[endHour] === undefined ? 0 : data[endHour]) + (endMinutes);
+    }
+    console.log(startHour, endHour, startMinutes, endMinutes, spendTime);
+    minutes += spendTime;
+    if (spendTime === 25) {
+      total += 1;
     }
   }
   return {
-    detail: res,
-    total,
+    data,
     // 几个番茄钟
-    timerTotal,
+    total,
+    // 总时长
+    minutes,
   };
 }
 
@@ -62,10 +62,11 @@ export function getHourRange(date) {
 }
 
 /** 
- * 将毫秒数转换为可读文本
+ * 将分钟转换为可读文本
+ * @param {number} minutes - 分钟数
  */
-export function getTimeText(millisecond) {
-  const tempTime = moment.duration(millisecond);
-  const hourText = tempTime.hours() > 0 ? `${tempTime.hours()}小时` : '';
-  return `${hourText}${tempTime.minutes()}分钟`;
+export function getTimeText(minutes) {
+  const temp = moment.duration(minutes * 60 * 1000);
+  const hourText = temp.hours() > 0 ? `${temp.hours()}h` : '';
+  return `${hourText} / ${temp.minutes()}min`;
 }

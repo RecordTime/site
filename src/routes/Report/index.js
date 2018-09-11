@@ -37,7 +37,6 @@ function format(date, formatter='HH:mm') {
   return moment(date).format(formatter);
 }
 
-const URL_REGEXP = new RegExp('[a-zA-z]+://[^]*');
 const columns = [
   {
     title: '开始时间',
@@ -53,7 +52,6 @@ const columns = [
     title: '关联任务',
     dataIndex: 'task',
     render: (val, item) => {
-      console.log(val, item);
       return <Link to={`/task/${val.uid}`}>{val.title}</Link>;
     }
   },
@@ -101,20 +99,19 @@ export default class ReportPage extends React.PureComponent {
             },
           };
         });
-        const { detail: data, total, timerTotal } = getChartData(dataSource);
-        console.log(dataSource, data, total);
+        const { data, total, minutes } = getChartData(dataSource);
         const chartData = [];
         Object.keys(data).forEach(hour => {
           chartData.push({
             x: `${hour}:00`,
-            y: Math.floor(data[hour] / 1000 / 60),
+            y: data[hour],
           });
         });
         this.setState({
           dataSource,
           data: chartData,
           total,
-          timerTotal,
+          minutes,
           loading: false,
         });
       })
@@ -123,15 +120,17 @@ export default class ReportPage extends React.PureComponent {
       });
   }
   render() {
-    const { loading, dataSource, data } = this.state;
+    const { loading, dataSource, data, minutes, total } = this.state;
+
+    const title = `${getTimeText(minutes)}   total: ${total}`;
     return (
       <div style={{ display: 'flex', padding: 20, height: '100%' }}>
         <div className="report__content" style={{ flex: 1, overflowY: 'auto', padding: 10, marginRight: 10, borderRadius: 10, background: '#fff' }}>
           <ChartCard
             head={<span style={{ lineHeight: '32px' }}>每小时工作时长趋势</span>}
-            // loading={loading}
+            loading={loading}
             style={{ marginBottom: 20 }}
-            // title={title}
+            title={title}
             // extra={(
             //   <DatePicker onChange={this.handleChangeDate} />
             // )}
@@ -139,7 +138,7 @@ export default class ReportPage extends React.PureComponent {
             <Bar height={292} data={data} />
           </ChartCard>
           <Table
-            rowKey="id"
+            rowKey="uid"
             loading={loading}
             columns={columns}
             dataSource={dataSource}
