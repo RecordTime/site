@@ -16,7 +16,7 @@ import {
   Bar,
 } from '../../components/Charts';
 import EmptyContainer from '../../components/EmptyTipContainer';
-import { getChartData, getTimeText } from '../../utils';
+import { getChartData, getTimeText, getMinutes } from '../../utils';
 
 import './index.css';
 
@@ -52,16 +52,12 @@ const columns = [
     title: '关联任务',
     dataIndex: 'task',
     render: (val, item) => {
-      return <Link to={`/task/${val.uid}`}>{val.title}</Link>;
+      return val && <Link to={`/task/${val.uid}`}>{val.title}</Link>;
     }
   },
   {
     title: '描述',
     dataIndex: 'content',
-  },
-  {
-    title: '时长',
-    dataIndex: 'length',
   },
 ];
 
@@ -72,6 +68,7 @@ export default class ReportPage extends React.PureComponent {
     this.state = {
       loading: true,
       dataSource: [],
+      groupedByTaskDataSource: {},
     };
   }
   componentDidMount() {
@@ -91,14 +88,60 @@ export default class ReportPage extends React.PureComponent {
     query.include('task');
     query.find()
       .then((res) => {
+        console.log(res);
+        /**
+         * interface Log {
+         *  id: String;
+         *  uid: Number;
+         *  beginTime: Date;
+         *  endTime: Date;
+         *  task: null | Task;
+         * }
+         * interface Task {
+         *  id: String;
+         *  uid: Number;
+         *  title: String;
+         *  desc: String;
+         *  isComplete: Boolean;
+         *  borad: String;
+         * }
+         */
+        const tasks = {};
         const dataSource = res.map(item => {
+          const serverTask = item.get('task');
+          let task = undefined;
+          if (serverTask) {
+            task = {
+              id: serverTask.id,
+              ...serverTask.attributes,
+            }
+            tasks[task.id] = task;
+          }
           return {
+            id: item.id,
             ...item.attributes,
-            task: {
-              ...item.get('task').attributes,
-            },
+            task,
           };
         });
+        const groupedByTaskDataSource = dataSource.reduce((prev, next) => {
+          const r = {
+          };
+          if (next.task) {
+            if (prev[next.task.id]) {
+              r[next.task.id] = prev[next.task.id].concat(next);
+            } else {
+              r[next.task.id] = [next];
+            }
+          } else {
+            prev.empty.push(next);
+          }
+          return {
+            ...prev,
+            ...r,
+          };
+        }, { empty: [] });
+        console.log(tasks, groupedByTaskDataSource);
+        // 需要能根据任务将 log 聚合
         const { data, total, minutes } = getChartData(dataSource);
         const chartData = [];
         Object.keys(data).forEach(hour => {
@@ -110,6 +153,8 @@ export default class ReportPage extends React.PureComponent {
         this.setState({
           dataSource,
           data: chartData,
+          groupedByTaskDataSource,
+          tasks,
           total,
           minutes,
           loading: false,
@@ -120,30 +165,42 @@ export default class ReportPage extends React.PureComponent {
       });
   }
   render() {
-    const { loading, dataSource, data, minutes, total } = this.state;
+    const { loading, dataSource, data, minutes, total, groupedByTaskDataSource, tasks } = this.state;
 
     const title = `${getTimeText(minutes)}   total: ${total}`;
     return (
-      <div style={{ display: 'flex', padding: 20, height: '100%' }}>
+      <div style={{ display: 'flex', height: '100%' }}>
         <div className="report__content" style={{ flex: 1, overflowY: 'auto', padding: 10, marginRight: 10, borderRadius: 10, background: '#fff' }}>
           <ChartCard
             head={<span style={{ lineHeight: '32px' }}>每小时工作时长趋势</span>}
             loading={loading}
             style={{ marginBottom: 20 }}
             title={title}
-            // extra={(
-            //   <DatePicker onChange={this.handleChangeDate} />
-            // )}
           >
             <Bar height={292} data={data} />
           </ChartCard>
           <Table
-            rowKey="uid"
+            rowKey="id"
             loading={loading}
             columns={columns}
             dataSource={dataSource}
             pagination={false}
           />
+          <ul>
+            {Object.keys(groupedByTaskDataSource).map(id => {
+              const logs = groupedByTaskDataSource[id];
+              const minutes = logs.reduce((prev, next) => {
+                const minutes = getMinutes(new Date(next.beginTime), new Date(next.endTime), true);
+                return prev + minutes;
+              }, 0);
+              const text = getTimeText(minutes);
+              return (
+                <li>
+                  <span>{text}</span> - <span>{tasks[id] ? tasks[id].title : id}</span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
         <div style={{ flex: 1, padding: 10, borderRadius: 10, background: '#fff' }}>
           <EmptyContainer title="请选择任务查看详情" />

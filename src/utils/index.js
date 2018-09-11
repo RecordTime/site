@@ -1,5 +1,20 @@
 import moment from 'moment';
 
+export function getMinutes(begin, end) {
+  const startTime = new Date(begin);
+  const startHour = startTime.getHours();
+  const startMinutes = startTime.getMinutes();
+  const endTime = new Date(end);
+  const endHour = endTime.getHours();
+  const endMinutes = endTime.getMinutes();
+  // 如果该次 log 是在同一个小时内
+  let spendTime = (60 - startMinutes) + endMinutes;
+  if (startHour === endHour) {
+    spendTime = endMinutes - startMinutes;
+  }
+  return spendTime === 25 ? 30 : spendTime;
+}
+
 /**
  * 首先要拿到时间区间
  * 从数据源计算想要展示的数据格式
@@ -67,6 +82,6 @@ export function getHourRange(date) {
  */
 export function getTimeText(minutes) {
   const temp = moment.duration(minutes * 60 * 1000);
-  const hourText = temp.hours() > 0 ? `${temp.hours()}h` : '';
-  return `${hourText} / ${temp.minutes()}min`;
+  const hourText = temp.hours() > 0 ? `${temp.hours()}h /` : '';
+  return `${hourText} ${temp.minutes()}min`;
 }
