@@ -186,7 +186,7 @@ export default class ReportPage extends React.PureComponent {
             dataSource={dataSource}
             pagination={false}
           />
-          <ul>
+          <ul style={{ listStyle: 'none' }}>
             {Object.keys(groupedByTaskDataSource).map(id => {
               const logs = groupedByTaskDataSource[id];
               const minutes = logs.reduce((prev, next) => {

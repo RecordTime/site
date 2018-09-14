@@ -82,6 +82,8 @@ export function getHourRange(date) {
  */
 export function getTimeText(minutes) {
   const temp = moment.duration(minutes * 60 * 1000);
-  const hourText = temp.hours() > 0 ? `${temp.hours()}h /` : '';
-  return `${hourText} ${temp.minutes()}min`;
+  const hourText = temp.hours() > 0 ? `${temp.hours()}h` : '';
+  const divider = ((temp.hours() > 0) && (temp.minutes())) > 0 ? ' / ' : '';
+  const minuteText = temp.minutes() > 0 ? `${temp.minutes()}min` : '';
+  return `${hourText} ${divider} ${minuteText}`;
 }

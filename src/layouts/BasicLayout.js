@@ -47,7 +47,7 @@ export default class BasicLayout extends React.PureComponent {
             </Dropdown>
           </div>
         </Header>
-        <Layout style={{ height: '100%' }}>
+        <Layout style={{ height: '100%', paddingBottom: 10 }}>
           <Sider style={{ background: 'none' }}>
             <p>侧边栏</p>
           </Sider>
